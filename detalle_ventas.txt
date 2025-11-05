@@ -1,0 +1,14 @@
+=== DETALLE DE VENTAS ===
+
+Venta 1 | Fecha: 2025-11-03 22:36:42 | Cliente: Agustin  Aguirrebengoa
+Nike Air Force (Talle 43) x2 - $55000.0 c/u = $110000.0
+----------------------------------------------------------------------
+Venta 3 | Fecha: 2025-11-04 23:33:49 | Cliente: Agustin  Aguirrebengoa
+Nike Deportivo (Talle 42) x2 - $50000.0 c/u = $100000.0
+----------------------------------------------------------------------
+Venta 3 | Fecha: 2025-11-04 23:33:49 | Cliente: Agustin  Aguirrebengoa
+Nike Air Force (Talle 43) x1 - $55000.0 c/u = $55000.0
+----------------------------------------------------------------------
+Venta 4 | Fecha: 2025-11-04 23:34:15 | Cliente: Maxi Erazo
+Nike Deportivo (Talle 42) x1 - $50000.0 c/u = $50000.0
+----------------------------------------------------------------------

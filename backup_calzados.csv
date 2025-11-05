@@ -1,0 +1,3 @@
+﻿id_calzado,codigo,modelo,color,talle,marca,precio,stock
+1,A123,Deportivo,Negro,42,Nike,50000.0,12
+2,B123,Air Force,Blanco,43,Nike,55000.0,2

@@ -1,11 +1,12 @@
 from database import conectar
+import datetime
 
 def menu_ventas():
     while True:
         print("\n=== MENÚ DE VENTAS ===")
         print("1. Registrar una venta")
-        print("2. Ver todas las ventas")
-        print("3. Ver detalles de una venta")
+        print("2. Ver todas las ventas (con detalle)")
+        print("3. Ver detalle de una venta específica")
         print("4. Volver al menú principal")
 
         opcion = input("Seleccione una opción: ")
@@ -21,7 +22,6 @@ def menu_ventas():
         else:
             print("Opción no válida.")
 
-
 def registrar_venta():
     conexion = conectar()
     cursor = conexion.cursor()
@@ -29,8 +29,6 @@ def registrar_venta():
     print("\n=== Registrar nueva venta ===")
     id_cliente = input("Ingrese el ID del cliente: ")
     id_vendedor = input("Ingrese el ID del vendedor: ")
-
-    import datetime
     fecha = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     cursor.execute("""
@@ -55,7 +53,9 @@ def registrar_venta():
         if not calzado:
             print("Calzado no encontrado.")
             continue
+
         precio_unitario, stock_actual = calzado
+
         if cantidad > stock_actual:
             print("Stock insuficiente.")
             continue
@@ -74,29 +74,59 @@ def registrar_venta():
         conexion.commit()
         print(f"Producto agregado. Subtotal: ${subtotal:.2f}")
 
-    print(f"\n Venta registrada correctamente. Total: ${total_venta:.2f}")
+    cursor.execute("UPDATE ventas SET total = ? WHERE id_venta = ?", (total_venta, id_venta))
+    conexion.commit()
+
+    print(f"\nVenta registrada correctamente. Total: ${total_venta:.2f}")
     conexion.close()
+
 
 def ver_ventas():
     conexion = conectar()
     cursor = conexion.cursor()
+
     cursor.execute("""
-        SELECT v.id_venta, v.fecha, c.nombre || ' ' || c.apellido AS cliente,
-               ve.nombre || ' ' || ve.apellido AS vendedor
+        SELECT v.id_venta, v.fecha, 
+               c.nombre || ' ' || c.apellido AS cliente,
+               ve.nombre || ' ' || ve.apellido AS vendedor,
+               v.total
         FROM ventas v
         JOIN clientes c ON v.id_cliente = c.id_cliente
         JOIN vendedores ve ON v.id_vendedor = ve.id_vendedor
-        ORDER BY v.id_venta DESC
+        ORDER BY v.id_venta;
     """)
-    resultados = cursor.fetchall()
+    ventas = cursor.fetchall()
+
+    if not ventas:
+        print("\nNo hay ventas registradas.")
+        conexion.close()
+        return
+
+    print("\n=== LISTADO DE VENTAS (DETALLADO) ===")
+
+    for venta in ventas:
+        id_venta = venta[0]
+        print(f"\nVenta N°{id_venta} | Fecha: {venta[1]}")
+        print(f"Cliente: {venta[2]} | Vendedor: {venta[3]}")
+        print("-" * 70)
+
+        cursor.execute("""
+            SELECT c.codigo, c.marca, c.modelo, d.cantidad, d.precio_unitario, d.subtotal
+            FROM detalle_ventas d
+            JOIN calzados c ON d.id_calzado = c.id_calzado
+            WHERE d.id_venta = ?;
+        """, (id_venta,))
+        detalles = cursor.fetchall()
+
+        for fila in detalles:
+            print(f"Código: {fila[0]} | {fila[1]} {fila[2]} | "
+                  f"Cantidad: {fila[3]} | Precio: ${fila[4]} | Subtotal: ${fila[5]}")
+
+        print(f"Total de la venta: ${venta[4]:.2f}")
+        print("=" * 70)
+
     conexion.close()
 
-    if resultados:
-        print("\n=== LISTADO DE VENTAS ===")
-        for fila in resultados:
-            print(f"ID: {fila[0]} | Fecha: {fila[1]} | Cliente: {fila[2]} | Vendedor: {fila[3]}")
-    else:
-        print("No hay ventas registradas.")
 
 def ver_detalle_venta():
     id_venta = input("Ingrese el ID de la venta: ")
@@ -104,18 +134,36 @@ def ver_detalle_venta():
     cursor = conexion.cursor()
 
     cursor.execute("""
+        SELECT v.fecha, c.nombre || ' ' || c.apellido AS cliente,
+               ve.nombre || ' ' || ve.apellido AS vendedor, v.total
+        FROM ventas v
+        JOIN clientes c ON v.id_cliente = c.id_cliente
+        JOIN vendedores ve ON v.id_vendedor = ve.id_vendedor
+        WHERE v.id_venta = ?;
+    """, (id_venta,))
+    cabecera = cursor.fetchone()
+
+    if not cabecera:
+        print("No existe una venta con ese ID.")
+        conexion.close()
+        return
+
+    print(f"\n=== Detalle de la venta N°{id_venta} ===")
+    print(f"Fecha: {cabecera[0]} | Cliente: {cabecera[1]} | Vendedor: {cabecera[2]}")
+    print("-" * 70)
+
+    cursor.execute("""
         SELECT c.codigo, c.marca, c.modelo, d.cantidad, d.precio_unitario, d.subtotal
         FROM detalle_ventas d
         JOIN calzados c ON d.id_calzado = c.id_calzado
-        WHERE d.id_venta = ?
+        WHERE d.id_venta = ?;
     """, (id_venta,))
-    resultados = cursor.fetchall()
+    detalles = cursor.fetchall()
 
-    if resultados:
-        print(f"\n=== Detalle de la venta {id_venta} ===")
-        for fila in resultados:
-            print(f"Código: {fila[0]} | {fila[1]} {fila[2]} | Cantidad: {fila[3]} | Precio: ${fila[4]} | Subtotal: ${fila[5]}")
-    else:
-        print("No hay detalle para esa venta.")
+    for fila in detalles:
+        print(f"Código: {fila[0]} | {fila[1]} {fila[2]} | "
+              f"Cantidad: {fila[3]} | Precio: ${fila[4]} | Subtotal: ${fila[5]}")
 
+    print(f"Total de la venta: ${cabecera[3]:.2f}")
+    print("=" * 70)
     conexion.close()
